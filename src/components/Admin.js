@@ -12,6 +12,11 @@ function Admin() {
   const [description, setDescription] = useState("");
   const [classifications, setClassifications] = useState("");
   
+  // NEW: Status fields
+  const [status, setStatus] = useState("available");
+  const [statusNote, setStatusNote] = useState("");
+  const [expectedArrival, setExpectedArrival] = useState("");
+  
   const [message, setMessage] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [products, setProducts] = useState([]);
@@ -25,6 +30,15 @@ function Admin() {
 
   const navigate = useNavigate();
   const API_BASE_URL = "https://home-back-3lqs.onrender.com";
+
+  // Status options
+  const statusOptions = [
+    { value: 'available', label: 'ხელმისაწვდომი', color: '#34c759' },
+    { value: 'restoring', label: 'აღდგენის პროცესში', color: '#ff9500' },
+    { value: 'on_the_way', label: 'გზაშია', color: '#007aff' },
+    { value: 'out_of_stock', label: 'არ არის მარაგში', color: '#ff3b30' },
+    { value: 'discontinued', label: 'შეწყვეტილი', color: '#8e8e93' }
+  ];
 
   // --- Check Server Status ---
   const checkServerStatus = useCallback(async () => {
@@ -65,6 +79,9 @@ function Admin() {
     setPrice("");
     setDescription("");
     setClassifications("");
+    setStatus("available");
+    setStatusNote("");
+    setExpectedArrival("");
     setMainImageFile(null);
     setOtherPhotosFiles([]);
     setMessage("");
@@ -83,11 +100,19 @@ function Admin() {
     setPrice(product.price ? product.price.toString() : "");
     setDescription(product.description || "");
     setClassifications(product.classifications || "");
+    setStatus(product.status || "available");
+    setStatusNote(product.statusNote || "");
+    setExpectedArrival(product.expectedArrival ? product.expectedArrival.split('T')[0] : "");
     
     setMessage(`რედაქტირების რეჟიმი: "${product.name}"`);
     
-    // Scroll to form
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Scroll to top smoothly after a tiny delay to ensure state updates
+    setTimeout(() => {
+      window.scrollTo({ 
+        top: 0, 
+        behavior: 'smooth' 
+      });
+    }, 100);
   };
 
   const cancelEdit = () => {
@@ -134,8 +159,17 @@ function Admin() {
       const formData = new FormData();
       formData.append("name", productName.trim());
       formData.append("price", price.trim());
-      formData.append("description", description.trim());
+      formData.append("description", description); // Don't trim to preserve formatting
       formData.append("classifications", classifications.trim());
+      formData.append("status", status);
+      
+      if (statusNote.trim()) {
+        formData.append("statusNote", statusNote.trim());
+      }
+      
+      if (expectedArrival) {
+        formData.append("expectedArrival", expectedArrival);
+      }
       
       if (mainImageFile) {
         formData.append("mainImage", mainImageFile);
@@ -330,8 +364,23 @@ function Admin() {
     }
   };
 
+  // Get status color
+  const getStatusColor = (statusValue) => {
+    const option = statusOptions.find(opt => opt.value === statusValue);
+    return option ? option.color : '#8e8e93';
+  };
+
+  // Get status label
+  const getStatusLabel = (statusValue) => {
+    const option = statusOptions.find(opt => opt.value === statusValue);
+    return option ? option.label : statusValue;
+  };
+
   // --- Effect Hooks ---
   useEffect(() => {
+    // Scroll to top immediately when component mounts
+    window.scrollTo(0, 0);
+    
     const loadInitialData = async () => {
       setIsLoadingInitial(true);
       await checkServerStatus();
@@ -451,6 +500,47 @@ function Admin() {
               />
             </div>
 
+            {/* NEW: Status Section */}
+            <div className="form-group">
+              <label className="label">სტატუსი</label>
+              <select
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+                disabled={isUploading}
+                className="input select-input"
+              >
+                {statusOptions.map(option => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label className="label">მოსალოდნელი თარიღი (არასავალდებულო)</label>
+              <input
+                type="date"
+                value={expectedArrival}
+                onChange={(e) => setExpectedArrival(e.target.value)}
+                disabled={isUploading}
+                className="input"
+              />
+            </div>
+
+            <div className="form-group form-group-full">
+              <label className="label">სტატუსი (არასავალდებულო)</label>
+              <input
+                type="text"
+                value={statusNote}
+                onChange={(e) => setStatusNote(e.target.value)}
+                disabled={isUploading}
+                className="input"
+                placeholder="მაგ: გზაშია, მალე იქნება მარაგში"
+                maxLength={200}
+              />
+            </div>
+
             <div className="form-group">
               <label className="label">
                 მთავარი სურათი
@@ -525,6 +615,13 @@ function Admin() {
                           e.target.style.display = 'none';
                         }}
                       />
+                      {/* Status Badge on Image */}
+                      <div 
+                        className="product-status-badge"
+                        style={{ backgroundColor: getStatusColor(product.status || 'available') }}
+                      >
+                        {getStatusLabel(product.status || 'available')}
+                      </div>
                     </div>
                   )}
                   
@@ -545,6 +642,20 @@ function Admin() {
                           : product.description
                         }
                       </p>
+                    )}
+
+                    {/* Status Info */}
+                    {(product.statusNote || product.expectedArrival) && (
+                      <div className="product-status-info">
+                        {product.statusNote && (
+                          <p className="status-note">📌 {product.statusNote}</p>
+                        )}
+                        {product.expectedArrival && (
+                          <p className="status-arrival">
+                            📅 მოსალოდნელია: {new Date(product.expectedArrival).toLocaleDateString('ka-GE')}
+                          </p>
+                        )}
+                      </div>
                     )}
 
                     <div className="product-meta">

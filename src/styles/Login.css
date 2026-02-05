@@ -173,3 +173,18 @@ body {
     font-size: 14px;
   }
 }
+
+
+/* Prevent zoom on input focus for mobile devices */
+input[type="text"],
+input[type="password"] {
+  font-size: 16px; /* iOS won't zoom if font-size is 16px or larger */
+}
+
+/* If you want smaller text on desktop, use media query */
+@media (min-width: 768px) {
+  input[type="text"],
+  input[type="password"] {
+    font-size: 14px; /* or whatever size you prefer */
+  }
+}

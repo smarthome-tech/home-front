@@ -15,6 +15,8 @@ function Login() {
     setError('');
     setIsLoading(true);
 
+    console.log('Login attempt:', { username, password }); // Debug
+
     // Simple validation
     if (!username.trim() || !password.trim()) {
       setError('გთხოვთ შეავსოთ ყველა ველი');
@@ -24,10 +26,23 @@ function Login() {
 
     // Check credentials
     if (username === 'SmartHome' && password === 'SmartHome123') {
+      console.log('Credentials correct! Setting auth...'); // Debug
+      
       localStorage.setItem('isAuthenticated', 'true');
+      
+      console.log('Auth set:', localStorage.getItem('isAuthenticated')); // Debug
+      
       setIsLoading(false);
-      navigate('/admin'); // Use navigate instead of window.location.href
+      
+      console.log('Navigating to /admin...'); // Debug
+      
+      // Navigate after a tiny delay to ensure localStorage is set
+      setTimeout(() => {
+        navigate('/admin');
+      }, 100);
+      
     } else {
+      console.log('Wrong credentials'); // Debug
       setError('მომხმარებლის სახელი ან პაროლი არასწორია');
       setIsLoading(false);
     }

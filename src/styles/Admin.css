@@ -221,7 +221,8 @@ body {
 }
 
 .input,
-.textarea {
+.textarea,
+.select-input {
   background: var(--white);
   border: 1px solid rgba(113, 121, 126, 0.2);
   border-radius: 8px;
@@ -232,6 +233,15 @@ body {
   font-family: 'Montserrat', sans-serif;
 }
 
+.select-input {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%2371797E' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  padding-right: 40px;
+}
+
 .input::placeholder,
 .textarea::placeholder {
   color: var(--gray);
@@ -239,14 +249,16 @@ body {
 }
 
 .input:focus,
-.textarea:focus {
+.textarea:focus,
+.select-input:focus {
   outline: none;
   border-color: var(--blue);
   box-shadow: 0 0 0 4px rgba(115, 147, 179, 0.1);
 }
 
 .input:disabled,
-.textarea:disabled {
+.textarea:disabled,
+.select-input:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
@@ -409,12 +421,28 @@ body {
   height: 220px;
   overflow: hidden;
   background: rgba(113, 121, 126, 0.05);
+  position: relative;
 }
 
 .product-image {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+/* NEW: Status Badge on Product Image */
+.product-status-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: white;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .product-content {
@@ -459,6 +487,29 @@ body {
   font-size: 14px;
   line-height: 1.6;
   margin-bottom: 16px;
+  white-space: pre-wrap; /* Preserve line breaks */
+}
+
+/* NEW: Product Status Info */
+.product-status-info {
+  background: rgba(115, 147, 179, 0.06);
+  border-left: 3px solid var(--blue);
+  padding: 10px 12px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+}
+
+.status-note {
+  font-size: 13px;
+  color: var(--gray);
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.status-arrival {
+  font-size: 13px;
+  color: var(--blue);
+  font-weight: 600;
 }
 
 .product-meta {
@@ -495,6 +546,26 @@ body {
   padding: 60px 20px;
   color: var(--gray);
   font-size: 15px;
+}
+
+/* Prevent zoom on input focus for mobile devices */
+input[type="text"],
+input[type="number"],
+input[type="date"],
+textarea,
+select {
+  font-size: 16px; /* iOS won't zoom if font-size is 16px or larger */
+}
+
+/* If you want smaller text on desktop, use media query */
+@media (min-width: 768px) {
+  input[type="text"],
+  input[type="number"],
+  input[type="date"],
+  textarea,
+  select {
+    font-size: 15px; /* or whatever size you prefer */
+  }
 }
 
 /* Responsive */
@@ -551,5 +622,10 @@ body {
 
   .product-actions {
     flex-direction: column;
+  }
+
+  .product-status-badge {
+    font-size: 11px;
+    padding: 5px 10px;
   }
 }
