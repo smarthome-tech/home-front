@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import '../styles/Login.css';
 
 function Login() {
@@ -6,6 +7,8 @@ function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  
+  const navigate = useNavigate();
 
   const handleLogin = (e) => {
     e.preventDefault();
@@ -23,7 +26,7 @@ function Login() {
     if (username === 'SmartHome' && password === 'SmartHome123') {
       localStorage.setItem('isAuthenticated', 'true');
       setIsLoading(false);
-      window.location.href = '/admin'; // Redirect to admin page
+      navigate('/admin'); // Use navigate instead of window.location.href
     } else {
       setError('მომხმარებლის სახელი ან პაროლი არასწორია');
       setIsLoading(false);
