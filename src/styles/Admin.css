@@ -125,7 +125,9 @@ body {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Stats Bar */
@@ -487,7 +489,8 @@ body {
   font-size: 14px;
   line-height: 1.6;
   margin-bottom: 16px;
-  white-space: pre-wrap; /* Preserve line breaks */
+  white-space: pre-wrap;
+  /* Preserve line breaks */
 }
 
 /* NEW: Product Status Info */
@@ -554,17 +557,20 @@ input[type="number"],
 input[type="date"],
 textarea,
 select {
-  font-size: 16px; /* iOS won't zoom if font-size is 16px or larger */
+  font-size: 16px;
+  /* iOS won't zoom if font-size is 16px or larger */
 }
 
 /* If you want smaller text on desktop, use media query */
 @media (min-width: 768px) {
+
   input[type="text"],
   input[type="number"],
   input[type="date"],
   textarea,
   select {
-    font-size: 15px; /* or whatever size you prefer */
+    font-size: 15px;
+    /* or whatever size you prefer */
   }
 }
 
@@ -628,4 +634,161 @@ select {
     font-size: 11px;
     padding: 5px 10px;
   }
+}
+
+
+
+
+
+/* ========================================
+   ADDITIONAL CSS — append to Admin.css
+   ======================================== */
+
+/* Tab Navigation */
+.tab-nav {
+  border-top: 1px solid rgba(113, 121, 126, 0.12);
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.tab-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.tab-nav-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 32px;
+  display: flex;
+  gap: 0;
+}
+
+.tab-btn {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--gray);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 14px 20px;
+  transition: all 0.2s ease;
+  font-family: 'Montserrat', sans-serif;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  position: relative;
+  top: 1px;
+}
+
+.tab-btn:hover {
+  color: var(--black);
+}
+
+.tab-btn-active {
+  color: var(--black);
+  border-bottom-color: var(--black);
+  font-weight: 600;
+}
+
+.tab-count {
+  background: var(--blue);
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 20px;
+  letter-spacing: 0;
+}
+
+/* Settings Section */
+.settings-section {
+  max-width: 680px;
+}
+
+.settings-hint {
+  font-size: 14px;
+  color: var(--gray);
+  margin-bottom: 8px;
+}
+
+/* Settings Preview */
+.settings-preview {
+  margin-top: 8px;
+}
+
+.settings-preview-label {
+  font-size: 13px;
+  color: var(--gray);
+  font-weight: 500;
+  margin-bottom: 10px;
+}
+
+/* Logo Preview */
+.logo-preview-wrapper {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(113, 121, 126, 0.06);
+  border: 1px solid rgba(113, 121, 126, 0.15);
+  border-radius: 12px;
+  padding: 16px 24px;
+  max-width: 240px;
+}
+
+.logo-preview-img {
+  max-width: 180px;
+  max-height: 80px;
+  object-fit: contain;
+}
+
+/* Banner Preview */
+.banner-preview-wrapper {
+  width: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(113, 121, 126, 0.15);
+  background: rgba(113, 121, 126, 0.04);
+}
+
+.banner-preview-img {
+  width: 100%;
+  max-height: 260px;
+  object-fit: cover;
+  display: block;
+}
+
+/* Responsive tabs */
+@media (max-width: 768px) {
+  .tab-nav-inner {
+    padding: 0 16px;
+  }
+
+  .tab-btn {
+    padding: 12px 14px;
+    font-size: 13px;
+  }
+
+  .settings-section {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .tab-btn {
+    padding: 12px 10px;
+    font-size: 12px;
+  }
+}
+
+
+.settings-hint {
+  font-size: 14px;
+  color: var(--gray);
+  margin-top: -20px;
+  /* ← this was the culprit */
+  margin-bottom: 8px;
+  margin-top: 30px;
 }
