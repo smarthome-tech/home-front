@@ -21,6 +21,7 @@ function Admin() {
   const [landingTitle, setLandingTitle] = useState("");
   const [landingDescription, setLandingDescription] = useState("");
   const [aboutText, setAboutText] = useState("");
+  const [servicesText, setServicesText] = useState("");
   const [bannerFile, setBannerFile] = useState(null);
   const [logoFile, setLogoFile] = useState(null);
   const [currentBanner, setCurrentBanner] = useState("");
@@ -54,6 +55,7 @@ function Admin() {
     { id: "logo", label: "ლოგო" },
     { id: "landing", label: "მთავარი გვერდი" },
     { id: "about", label: "ჩვენს შესახებ" },
+    { id: "services", label: "სერვისები" },
     { id: "banner", label: "მთავარი ფოტო" },
   ];
 
@@ -80,6 +82,7 @@ function Admin() {
         setLandingTitle(s.landingTitle || "");
         setLandingDescription(s.landingDescription || "");
         setAboutText(s.aboutText || "");
+        setServicesText(s.servicesText || "");
         setCurrentBanner(s.landingBanner || "");
         setCurrentLogo(s.logo || "");
       }
@@ -275,6 +278,25 @@ function Admin() {
       });
       const data = await res.json();
       setSettingsMessage(res.ok ? "ჩვენს შესახებ შენახულია ✓" : `შეცდომა: ${data.error}`);
+      setTimeout(() => setSettingsMessage(""), 4000);
+    } catch (err) {
+      setSettingsMessage("შეცდომა: " + err.message);
+    } finally {
+      setIsSavingSettings(false);
+    }
+  };
+
+  const saveServices = async () => {
+    setIsSavingSettings(true);
+    setSettingsMessage("ინახება...");
+    try {
+      const res = await fetch(`${API_BASE_URL}/settings/services`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ servicesText })
+      });
+      const data = await res.json();
+      setSettingsMessage(res.ok ? "სერვისები შენახულია ✓" : `შეცდომა: ${data.error}`);
       setTimeout(() => setSettingsMessage(""), 4000);
     } catch (err) {
       setSettingsMessage("შეცდომა: " + err.message);
@@ -656,6 +678,31 @@ function Admin() {
             </div>
 
             <button onClick={saveAbout} disabled={isSavingSettings} className="btn-primary" style={{ marginTop: '24px' }}>
+              {isSavingSettings ? 'ინახება...' : 'შენახვა'}
+            </button>
+
+            {settingsMessage && (
+              <div className={`message ${settingsMessage.includes('✓') ? 'message-success' : 'message-error'}`}>
+                {settingsMessage}
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* ===== SERVICES TAB ===== */}
+        {activeTab === "services" && !isLoadingInitial && (
+          <section className="form-section settings-section">
+            <h2 className="section-title">სერვისები</h2>
+            <p className="settings-hint">ტექსტი "სერვისები" გვერდისთვის</p>
+
+            <div className="form-group" style={{ marginTop: '24px' }}>
+              <label className="label">ტექსტი</label>
+              <textarea value={servicesText} onChange={e => setServicesText(e.target.value)}
+                disabled={isSavingSettings} className="textarea" placeholder="სერვისების ინფორმაცია..."
+                rows="10" />
+            </div>
+
+            <button onClick={saveServices} disabled={isSavingSettings} className="btn-primary" style={{ marginTop: '24px' }}>
               {isSavingSettings ? 'ინახება...' : 'შენახვა'}
             </button>
 
