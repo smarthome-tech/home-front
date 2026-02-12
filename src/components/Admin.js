@@ -11,6 +11,7 @@ function Admin() {
   const [otherPhotosFiles, setOtherPhotosFiles] = useState([]);
   const [productName, setProductName] = useState("");
   const [price, setPrice] = useState("");
+  const [numeration, setNumeration] = useState(""); // 🆕 NEW STATE
   const [description, setDescription] = useState("");
   const [classifications, setClassifications] = useState("");
   const [status, setStatus] = useState("available");
@@ -111,7 +112,7 @@ function Admin() {
   };
 
   const clearForm = () => {
-    setProductName(""); setPrice(""); setDescription(""); setClassifications("");
+    setProductName(""); setPrice(""); setNumeration(""); setDescription(""); setClassifications("");
     setStatus("available"); setStatusNote(""); setExpectedArrival("");
     setMainImageFile(null); setOtherPhotosFiles([]); setMessage("");
     document.querySelectorAll('input[type="file"]').forEach(i => i.value = '');
@@ -122,6 +123,7 @@ function Admin() {
     setEditingProductId(product._id);
     setProductName(product.name || "");
     setPrice(product.price ? product.price.toString() : "");
+    setNumeration(product.numeration !== undefined ? product.numeration.toString() : ""); // 🆕 SET NUMERATION
     setDescription(product.description || "");
     setClassifications(product.classifications || "");
     setStatus(product.status || "available");
@@ -157,11 +159,18 @@ function Admin() {
       const formData = new FormData();
       formData.append("name", productName.trim());
       formData.append("price", price.trim());
+
+      // 🆕 ADD NUMERATION IF PROVIDED
+      if (numeration.trim()) {
+        formData.append("numeration", numeration.trim());
+      }
+
       formData.append("description", description);
       formData.append("classifications", classifications.trim());
       formData.append("status", status);
       if (statusNote.trim()) formData.append("statusNote", statusNote.trim());
       if (expectedArrival) formData.append("expectedArrival", expectedArrival);
+
       if (mainImageFile) formData.append("mainImage", mainImageFile);
       otherPhotosFiles.forEach(file => formData.append("otherPhotos", file));
 
@@ -194,6 +203,7 @@ function Admin() {
   const loadProducts = useCallback(async (retryCount = 0) => {
     const maxRetries = 5;
     const retryDelay = 3000;
+
     try {
       const res = await fetch(`${API_BASE_URL}/products`);
       if (!res.ok) {
@@ -227,12 +237,15 @@ function Admin() {
 
   const deleteProduct = async (productId, productName) => {
     if (!window.confirm(`წაიშალოს "${productName}"?`)) return;
+
     const isConnected = await checkServerStatus();
     if (!isConnected) { setMessage("ბაზასთან კავშირი არ არის."); return; }
+
     try {
       setMessage("იშლება...");
       const res = await fetch(`${API_BASE_URL}/products/${productId}`, { method: "DELETE" });
       const data = await res.json();
+
       if (res.ok) {
         setMessage(`"${productName}" წაიშალა`);
         setProducts(prev => prev.filter(p => p._id !== productId));
@@ -446,6 +459,24 @@ function Admin() {
                     disabled={isUploading} className="input" placeholder="0.00" step="0.01" min="0" />
                 </div>
 
+                {/* 🆕 NUMERATION FIELD */}
+                <div className="form-group">
+                  <label className="label">ნომერი (არასავალდებულო)</label>
+                  <input
+                    type="number"
+                    value={numeration}
+                    onChange={e => setNumeration(e.target.value)}
+                    disabled={isUploading}
+                    className="input"
+                    placeholder="1, 2, 3..."
+                    min="0"
+                    step="1"
+                  />
+                  <small style={{ color: '#8e8e93', fontSize: '0.75rem', marginTop: '4px', display: 'block' }}>
+                    გამოიყენეთ დალაგებისთვის მთავარ გვერდზე
+                  </small>
+                </div>
+
                 <div className="form-group form-group-full">
                   <label className="label">აღწერა</label>
                   <textarea value={description} onChange={e => setDescription(e.target.value)}
@@ -531,6 +562,12 @@ function Admin() {
                             style={{ backgroundColor: getStatusColor(product.status || 'available') }}>
                             {getStatusLabel(product.status || 'available')}
                           </div>
+                          {/* 🆕 SHOW NUMERATION BADGE */}
+                          {product.numeration !== undefined && (
+                            <div className="product-numeration-badge">
+                              #{product.numeration}
+                            </div>
+                          )}
                         </div>
                       )}
                       <div className="product-content">
@@ -588,7 +625,6 @@ function Admin() {
           <section className="form-section settings-section">
             <h2 className="section-title">ლოგო</h2>
             <p className="settings-hint">საიტის ლოგოს ატვირთვა</p>
-
             {currentLogo && (
               <div className="settings-preview">
                 <p className="settings-preview-label">მიმდინარე ლოგო</p>
@@ -598,7 +634,6 @@ function Admin() {
                 </div>
               </div>
             )}
-
             <div className="form-group" style={{ marginTop: '24px' }}>
               <label className="label">ახალი ლოგო</label>
               <div className="file-input-wrapper">
@@ -609,7 +644,6 @@ function Admin() {
                 </label>
               </div>
             </div>
-
             {logoFile && (
               <div className="settings-preview" style={{ marginTop: '16px' }}>
                 <p className="settings-preview-label">არჩეული</p>
@@ -618,11 +652,9 @@ function Admin() {
                 </div>
               </div>
             )}
-
             <button onClick={saveLogo} disabled={isSavingSettings || !logoFile} className="btn-primary" style={{ marginTop: '24px' }}>
               {isSavingSettings ? 'ატვირთვა...' : 'შენახვა'}
             </button>
-
             {settingsMessage && (
               <div className={`message ${settingsMessage.includes('✓') ? 'message-success' : 'message-error'}`}>
                 {settingsMessage}
@@ -636,14 +668,12 @@ function Admin() {
           <section className="form-section settings-section">
             <h2 className="section-title">მთავარი გვერდის ტექსტი</h2>
             <p className="settings-hint">სათაური და აღწერა რომელიც გამოჩნდება მთავარ გვერდზე</p>
-
             <div className="form-grid" style={{ marginTop: '24px' }}>
               <div className="form-group form-group-full">
                 <label className="label">სათაური</label>
                 <input type="text" value={landingTitle} onChange={e => setLandingTitle(e.target.value)}
                   disabled={isSavingSettings} className="input" placeholder="საიტის სათაური" />
               </div>
-
               <div className="form-group form-group-full">
                 <label className="label">აღწერა</label>
                 <textarea value={landingDescription} onChange={e => setLandingDescription(e.target.value)}
@@ -651,11 +681,9 @@ function Admin() {
                   rows="5" />
               </div>
             </div>
-
             <button onClick={saveLanding} disabled={isSavingSettings} className="btn-primary" style={{ marginTop: '8px' }}>
               {isSavingSettings ? 'ინახება...' : 'შენახვა'}
             </button>
-
             {settingsMessage && (
               <div className={`message ${settingsMessage.includes('✓') ? 'message-success' : 'message-error'}`}>
                 {settingsMessage}
@@ -669,18 +697,15 @@ function Admin() {
           <section className="form-section settings-section">
             <h2 className="section-title">ჩვენს შესახებ</h2>
             <p className="settings-hint">ტექსტი "ჩვენს შესახებ" გვერდისთვის</p>
-
             <div className="form-group" style={{ marginTop: '24px' }}>
               <label className="label">ტექსტი</label>
               <textarea value={aboutText} onChange={e => setAboutText(e.target.value)}
                 disabled={isSavingSettings} className="textarea" placeholder="ჩვენს შესახებ ინფორმაცია..."
                 rows="10" />
             </div>
-
             <button onClick={saveAbout} disabled={isSavingSettings} className="btn-primary" style={{ marginTop: '24px' }}>
               {isSavingSettings ? 'ინახება...' : 'შენახვა'}
             </button>
-
             {settingsMessage && (
               <div className={`message ${settingsMessage.includes('✓') ? 'message-success' : 'message-error'}`}>
                 {settingsMessage}
@@ -694,18 +719,15 @@ function Admin() {
           <section className="form-section settings-section">
             <h2 className="section-title">სერვისები</h2>
             <p className="settings-hint">ტექსტი "სერვისები" გვერდისთვის</p>
-
             <div className="form-group" style={{ marginTop: '24px' }}>
               <label className="label">ტექსტი</label>
               <textarea value={servicesText} onChange={e => setServicesText(e.target.value)}
                 disabled={isSavingSettings} className="textarea" placeholder="სერვისების ინფორმაცია..."
                 rows="10" />
             </div>
-
             <button onClick={saveServices} disabled={isSavingSettings} className="btn-primary" style={{ marginTop: '24px' }}>
               {isSavingSettings ? 'ინახება...' : 'შენახვა'}
             </button>
-
             {settingsMessage && (
               <div className={`message ${settingsMessage.includes('✓') ? 'message-success' : 'message-error'}`}>
                 {settingsMessage}
@@ -719,7 +741,6 @@ function Admin() {
           <section className="form-section settings-section">
             <h2 className="section-title">მთავარი გვერდის ფოტო</h2>
             <p className="settings-hint">ბანერი სურათი რომელიც გამოჩნდება მთავარ გვერდზე</p>
-
             {currentBanner && (
               <div className="settings-preview" style={{ marginTop: '24px' }}>
                 <p className="settings-preview-label">მიმდინარე ბანერი</p>
@@ -729,7 +750,6 @@ function Admin() {
                 </div>
               </div>
             )}
-
             <div className="form-group" style={{ marginTop: '24px' }}>
               <label className="label">ახალი ბანერი</label>
               <div className="file-input-wrapper">
@@ -740,7 +760,6 @@ function Admin() {
                 </label>
               </div>
             </div>
-
             {bannerFile && (
               <div className="settings-preview" style={{ marginTop: '16px' }}>
                 <p className="settings-preview-label">არჩეული</p>
@@ -749,11 +768,9 @@ function Admin() {
                 </div>
               </div>
             )}
-
             <button onClick={saveBanner} disabled={isSavingSettings || !bannerFile} className="btn-primary" style={{ marginTop: '24px' }}>
               {isSavingSettings ? 'ატვირთვა...' : 'შენახვა'}
             </button>
-
             {settingsMessage && (
               <div className={`message ${settingsMessage.includes('✓') ? 'message-success' : 'message-error'}`}>
                 {settingsMessage}
