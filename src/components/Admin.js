@@ -1,9 +1,184 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from 'react-router-dom';
 import "../styles/Admin.css";
 
+// ─── Simple Rich Text Toolbar ─────────────────────────────────────────────────
+// Uses native execCommand (no external packages) for color + font size.
+// Wraps a contentEditable div. Value is stored as HTML string.
+function RichEditor({ value, onChange, disabled, placeholder, rows = 5 }) {
+  const editorRef = useRef(null);
+  const isInternalUpdate = useRef(false);
+
+  // Sync incoming value into DOM only when it changes externally (e.g. on load)
+  useEffect(() => {
+    if (!editorRef.current) return;
+    if (editorRef.current.innerHTML !== value) {
+      isInternalUpdate.current = true;
+      editorRef.current.innerHTML = value || '';
+    }
+  }, [value]);
+
+  const handleInput = () => {
+    if (isInternalUpdate.current) { isInternalUpdate.current = false; return; }
+    onChange(editorRef.current.innerHTML);
+  };
+
+  const exec = (command, val = null) => {
+    editorRef.current.focus();
+    document.execCommand(command, false, val);
+    onChange(editorRef.current.innerHTML);
+  };
+
+  const FONT_SIZES = [
+    { label: 'XS', value: '12px' },
+    { label: 'S',  value: '16px' },
+    { label: 'M',  value: '20px' },
+    { label: 'L',  value: '28px' },
+    { label: 'XL', value: '36px' },
+    { label: 'XXL',value: '48px' },
+  ];
+
+  const COLORS = [
+    '#ffffff', '#f5f5f7', '#cccccc', '#888888', '#333333', '#000000',
+    '#ff3b30', '#ff9500', '#ffcc00', '#34c759', '#007aff', '#af52de',
+  ];
+
+  // execCommand fontSize only accepts 1-7, so we wrap selected text in a span instead
+  const applyFontSize = (px) => {
+    editorRef.current.focus();
+    const sel = window.getSelection();
+    if (!sel.rangeCount) return;
+    const range = sel.getRangeAt(0);
+    if (range.collapsed) return; // nothing selected
+    const span = document.createElement('span');
+    span.style.fontSize = px;
+    range.surroundContents(span);
+    onChange(editorRef.current.innerHTML);
+  };
+
+  const applyColor = (color) => {
+    exec('foreColor', color);
+  };
+
+  const toolbarStyle = {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: '6px',
+    alignItems: 'center',
+    padding: '8px 10px',
+    background: '#1c1c1e',
+    border: '1px solid #3a3a3c',
+    borderBottom: 'none',
+    borderRadius: '8px 8px 0 0',
+  };
+
+  const btnStyle = {
+    background: '#2c2c2e',
+    border: '1px solid #3a3a3c',
+    borderRadius: '5px',
+    color: '#fff',
+    cursor: 'pointer',
+    padding: '3px 8px',
+    fontSize: '12px',
+    fontWeight: 'bold',
+  };
+
+  const editorStyle = {
+    minHeight: `${rows * 24}px`,
+    padding: '10px 12px',
+    background: '#1c1c1e',
+    border: '1px solid #3a3a3c',
+    borderRadius: '0 0 8px 8px',
+    color: '#fff',
+    outline: 'none',
+    lineHeight: 1.6,
+    opacity: disabled ? 0.5 : 1,
+    pointerEvents: disabled ? 'none' : 'auto',
+    overflowY: 'auto',
+  };
+
+  const dividerStyle = {
+    width: '1px', height: '20px', background: '#3a3a3c', margin: '0 2px',
+  };
+
+  return (
+    <div>
+      {/* ── Toolbar ── */}
+      <div style={toolbarStyle}>
+
+        {/* Bold / Italic / Underline */}
+        <button type="button" style={btnStyle} onMouseDown={e => { e.preventDefault(); exec('bold'); }} title="Bold">B</button>
+        <button type="button" style={{ ...btnStyle, fontStyle: 'italic' }} onMouseDown={e => { e.preventDefault(); exec('italic'); }} title="Italic">I</button>
+        <button type="button" style={{ ...btnStyle, textDecoration: 'underline' }} onMouseDown={e => { e.preventDefault(); exec('underline'); }} title="Underline">U</button>
+
+        <div style={dividerStyle} />
+
+        {/* Font size buttons */}
+        {FONT_SIZES.map(s => (
+          <button
+            key={s.value}
+            type="button"
+            style={btnStyle}
+            onMouseDown={e => { e.preventDefault(); applyFontSize(s.value); }}
+            title={`Font size ${s.value}`}
+          >
+            {s.label}
+          </button>
+        ))}
+
+        <div style={dividerStyle} />
+
+        {/* Color swatches */}
+        {COLORS.map(c => (
+          <button
+            key={c}
+            type="button"
+            onMouseDown={e => { e.preventDefault(); applyColor(c); }}
+            title={c}
+            style={{
+              width: '20px', height: '20px',
+              borderRadius: '50%',
+              background: c,
+              border: c === '#ffffff' ? '1px solid #555' : '1px solid transparent',
+              cursor: 'pointer',
+              padding: 0,
+              flexShrink: 0,
+            }}
+          />
+        ))}
+
+        <div style={dividerStyle} />
+
+        {/* Clear formatting */}
+        <button
+          type="button"
+          style={{ ...btnStyle, fontSize: '11px', color: '#ff453a' }}
+          onMouseDown={e => { e.preventDefault(); exec('removeFormat'); }}
+          title="Clear formatting"
+        >
+          ✕
+        </button>
+      </div>
+
+      {/* ── Editable area ── */}
+      <div
+        ref={editorRef}
+        contentEditable={!disabled}
+        suppressContentEditableWarning
+        onInput={handleInput}
+        style={editorStyle}
+        data-placeholder={placeholder}
+      />
+
+      <small style={{ color: '#636366', fontSize: '0.72rem', marginTop: '4px', display: 'block' }}>
+        მონიშნეთ ტექსტი, შემდეგ დააჭირეთ ზომის ან ფერის ღილაკს
+      </small>
+    </div>
+  );
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 function Admin() {
-  // --- Active Tab ---
   const [activeTab, setActiveTab] = useState("products");
 
   // --- Product State ---
@@ -11,7 +186,7 @@ function Admin() {
   const [otherPhotosFiles, setOtherPhotosFiles] = useState([]);
   const [productName, setProductName] = useState("");
   const [price, setPrice] = useState("");
-  const [numeration, setNumeration] = useState(""); // 🆕 NEW STATE
+  const [numeration, setNumeration] = useState("");
   const [description, setDescription] = useState("");
   const [classifications, setClassifications] = useState("");
   const [status, setStatus] = useState("available");
@@ -60,7 +235,6 @@ function Admin() {
     { id: "banner", label: "მთავარი ფოტო" },
   ];
 
-  // --- Server Status ---
   const checkServerStatus = useCallback(async () => {
     try {
       const res = await fetch(`${API_BASE_URL}/`);
@@ -73,7 +247,6 @@ function Admin() {
     }
   }, [API_BASE_URL]);
 
-  // --- Load Settings ---
   const loadSettings = useCallback(async () => {
     try {
       const res = await fetch(`${API_BASE_URL}/settings`);
@@ -92,13 +265,11 @@ function Admin() {
     }
   }, [API_BASE_URL]);
 
-  // --- Logout ---
   const handleLogout = () => {
     localStorage.removeItem('isAuthenticated');
     navigate('/login');
   };
 
-  // --- Product Handlers ---
   const handleMainImageChange = (e) => {
     const file = e.target.files[0];
     setMainImageFile(file);
@@ -123,7 +294,7 @@ function Admin() {
     setEditingProductId(product._id);
     setProductName(product.name || "");
     setPrice(product.price ? product.price.toString() : "");
-    setNumeration(product.numeration !== undefined ? product.numeration.toString() : ""); // 🆕 SET NUMERATION
+    setNumeration(product.numeration !== undefined ? product.numeration.toString() : "");
     setDescription(product.description || "");
     setClassifications(product.classifications || "");
     setStatus(product.status || "available");
@@ -159,18 +330,12 @@ function Admin() {
       const formData = new FormData();
       formData.append("name", productName.trim());
       formData.append("price", price.trim());
-
-      // 🆕 ADD NUMERATION IF PROVIDED
-      if (numeration.trim()) {
-        formData.append("numeration", numeration.trim());
-      }
-
+      if (numeration.trim()) formData.append("numeration", numeration.trim());
       formData.append("description", description);
       formData.append("classifications", classifications.trim());
       formData.append("status", status);
       if (statusNote.trim()) formData.append("statusNote", statusNote.trim());
       if (expectedArrival) formData.append("expectedArrival", expectedArrival);
-
       if (mainImageFile) formData.append("mainImage", mainImageFile);
       otherPhotosFiles.forEach(file => formData.append("otherPhotos", file));
 
@@ -203,7 +368,6 @@ function Admin() {
   const loadProducts = useCallback(async (retryCount = 0) => {
     const maxRetries = 5;
     const retryDelay = 3000;
-
     try {
       const res = await fetch(`${API_BASE_URL}/products`);
       if (!res.ok) {
@@ -237,15 +401,12 @@ function Admin() {
 
   const deleteProduct = async (productId, productName) => {
     if (!window.confirm(`წაიშალოს "${productName}"?`)) return;
-
     const isConnected = await checkServerStatus();
     if (!isConnected) { setMessage("ბაზასთან კავშირი არ არის."); return; }
-
     try {
       setMessage("იშლება...");
       const res = await fetch(`${API_BASE_URL}/products/${productId}`, { method: "DELETE" });
       const data = await res.json();
-
       if (res.ok) {
         setMessage(`"${productName}" წაიშალა`);
         setProducts(prev => prev.filter(p => p._id !== productId));
@@ -268,6 +429,7 @@ function Admin() {
       const res = await fetch(`${API_BASE_URL}/settings/landing`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
+        // landingTitle and landingDescription are now HTML strings
         body: JSON.stringify({ landingTitle, landingDescription })
       });
       const data = await res.json();
@@ -384,14 +546,11 @@ function Admin() {
 
   return (
     <div className="admin-container">
-      {/* Header */}
       <header className="header">
         <div className="header-content">
           <h1 className="header-title">SmartHome Admin</h1>
           <button onClick={handleLogout} className="logout-btn">გასვლა</button>
         </div>
-
-        {/* Tab Navigation */}
         <nav className="tab-nav">
           <div className="tab-nav-inner">
             {tabs.map(tab => (
@@ -410,7 +569,6 @@ function Admin() {
         </nav>
       </header>
 
-      {/* Main Content */}
       <main className="main-content">
         {serverStatus && serverStatus.database !== 'connected' && (
           <div className="alert alert-error">
@@ -459,19 +617,10 @@ function Admin() {
                     disabled={isUploading} className="input" placeholder="0.00" step="0.01" min="0" />
                 </div>
 
-                {/* 🆕 NUMERATION FIELD */}
                 <div className="form-group">
                   <label className="label">ნომერი (არასავალდებულო)</label>
-                  <input
-                    type="number"
-                    value={numeration}
-                    onChange={e => setNumeration(e.target.value)}
-                    disabled={isUploading}
-                    className="input"
-                    placeholder="1, 2, 3..."
-                    min="0"
-                    step="1"
-                  />
+                  <input type="number" value={numeration} onChange={e => setNumeration(e.target.value)}
+                    disabled={isUploading} className="input" placeholder="1, 2, 3..." min="0" step="1" />
                   <small style={{ color: '#8e8e93', fontSize: '0.75rem', marginTop: '4px', display: 'block' }}>
                     გამოიყენეთ დალაგებისთვის მთავარ გვერდზე
                   </small>
@@ -562,11 +711,8 @@ function Admin() {
                             style={{ backgroundColor: getStatusColor(product.status || 'available') }}>
                             {getStatusLabel(product.status || 'available')}
                           </div>
-                          {/* 🆕 SHOW NUMERATION BADGE */}
                           {product.numeration !== undefined && (
-                            <div className="product-numeration-badge">
-                              #{product.numeration}
-                            </div>
+                            <div className="product-numeration-badge">#{product.numeration}</div>
                           )}
                         </div>
                       )}
@@ -663,25 +809,37 @@ function Admin() {
           </section>
         )}
 
-        {/* ===== LANDING TAB ===== */}
+        {/* ===== LANDING TAB — now uses RichEditor ===== */}
         {activeTab === "landing" && !isLoadingInitial && (
           <section className="form-section settings-section">
             <h2 className="section-title">მთავარი გვერდის ტექსტი</h2>
-            <p className="settings-hint">სათაური და აღწერა რომელიც გამოჩნდება მთავარ გვერდზე</p>
+            <p className="settings-hint">მონიშნეთ ტექსტი და გამოიყენეთ ტულბარი ფერისა და ზომის შესაცვლელად</p>
+
             <div className="form-grid" style={{ marginTop: '24px' }}>
               <div className="form-group form-group-full">
-                <label className="label">სათაური</label>
-                <input type="text" value={landingTitle} onChange={e => setLandingTitle(e.target.value)}
-                  disabled={isSavingSettings} className="input" placeholder="საიტის სათაური" />
+                <label className="label" style={{ marginBottom: '8px', display: 'block' }}>სათაური</label>
+                <RichEditor
+                  value={landingTitle}
+                  onChange={setLandingTitle}
+                  disabled={isSavingSettings}
+                  placeholder="საიტის სათაური"
+                  rows={3}
+                />
               </div>
+
               <div className="form-group form-group-full">
-                <label className="label">აღწერა</label>
-                <textarea value={landingDescription} onChange={e => setLandingDescription(e.target.value)}
-                  disabled={isSavingSettings} className="textarea" placeholder="მთავარი გვერდის ტექსტი"
-                  rows="5" />
+                <label className="label" style={{ marginBottom: '8px', display: 'block' }}>აღწერა</label>
+                <RichEditor
+                  value={landingDescription}
+                  onChange={setLandingDescription}
+                  disabled={isSavingSettings}
+                  placeholder="მთავარი გვერდის ტექსტი"
+                  rows={5}
+                />
               </div>
             </div>
-            <button onClick={saveLanding} disabled={isSavingSettings} className="btn-primary" style={{ marginTop: '8px' }}>
+
+            <button onClick={saveLanding} disabled={isSavingSettings} className="btn-primary" style={{ marginTop: '16px' }}>
               {isSavingSettings ? 'ინახება...' : 'შენახვა'}
             </button>
             {settingsMessage && (
